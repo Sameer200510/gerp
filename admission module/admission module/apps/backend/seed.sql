@@ -1,0 +1,1 @@
+INSERT INTO "Course" (id, name, code, department, fee, "updatedAt") VALUES ('btech', 'B.Tech Computer Science', 'CS101', 'Engineering', 150000, NOW()), ('bba', 'Bachelor of Business Admin', 'BBA101', 'Management', 100000, NOW()), ('mba', 'Master of Business Admin', 'MBA101', 'Management', 200000, NOW()) ON CONFLICT DO NOTHING;

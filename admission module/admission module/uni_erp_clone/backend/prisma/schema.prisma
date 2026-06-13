@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMISSION_OFFICER
+  STUDENT
+}
+
+model User {
+  id              String          @id @default(uuid())
+  loginId         String          @unique
+  email           String?         @unique
+  passwordHash    String
+  role            Role
+  isFirstLogin    Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  status          String          @default("ACTIVE")
+  studentProfile  StudentProfile?
+  documents       Document[]
+  admission       Admission?
+}
+
+model StudentProfile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  firstName String
+  lastName  String
+  dob       DateTime?
+  phone     String?
+  address   String?
+  course    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  type      String   // e.g. "TRANSCRIPT", "ID_PROOF"
+  fileUrl   String
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Admission {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  status    String   @default("APPLIED") // APPLIED, UNDER_REVIEW, ADMITTED, REJECTED
+  appliedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdmissionLead {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  phone           String
+  courseId        String?
+  status          String   @default("PENDING")
+  documents       DocumentFile[]
+  payment         Payment?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DocumentFile {
+  id              String         @id @default(uuid())
+  fileUrl         String
+  status          String         @default("PENDING")
+  admissionLeadId String
+  admissionLead   AdmissionLead  @relation(fields: [admissionLeadId], references: [id])
+  createdAt       DateTime       @default(now())
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  amount          Float
+  status          String         @default("PENDING")
+  admissionLeadId String         @unique
+  admissionLead   AdmissionLead  @relation(fields: [admissionLeadId], references: [id])
+  createdAt       DateTime       @default(now())
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  fee         Float    @default(0)
+}
+
+model Batch {
+  id          String   @id @default(uuid())
+  name        String
+  year        Int
+  courseId    String
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String
+  oldValue    String?
+  newValue    String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+

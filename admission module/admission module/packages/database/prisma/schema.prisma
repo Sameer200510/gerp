@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User & Auth
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  password  String?
+  firstName String?
+  lastName  String?
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  auditLogs      AuditLog[]
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMISSION_ADMIN
+  COUNSELOR
+  ACCOUNTS_STAFF
+  STUDENT
+}
+
+// Admission Lead
+model AdmissionLead {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  phone           String   @unique
+  courseId        String?
+  source          LeadSource @default(WALK_IN)
+  status          LeadStatus @default(NEW)
+  address         String?
+  parentName      String?
+  parentPhone     String?
+  academicInfo    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  course          Course?  @relation(fields: [courseId], references: [id])
+  documents       Document[]
+  payments        Payment[]
+  studentProfile  StudentProfile?
+}
+
+enum LeadSource {
+  WALK_IN
+  WEBSITE
+  REFERRAL
+  CAMPAIGN
+}
+
+enum LeadStatus {
+  NEW
+  DOCUMENTS_PENDING
+  VERIFICATION_PENDING
+  PAYMENT_PENDING
+  APPROVED
+  REJECTED
+}
+
+// Academic Configuration
+model Course {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  department  String
+  fee         Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       AdmissionLead[]
+  students    StudentProfile[]
+  batches     Batch[]
+}
+
+model Batch {
+  id          String   @id @default(uuid())
+  name        String
+  year        Int
+  courseId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      Course   @relation(fields: [courseId], references: [id])
+  students    StudentProfile[]
+}
+
+// Student Profile (created after approval)
+model StudentProfile {
+  id          String   @id @default(uuid())
+  erpId       String   @unique // The generated unique admission/ERP ID
+  userId      String   @unique
+  leadId      String   @unique
+  courseId    String
+  batchId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id])
+  lead        AdmissionLead @relation(fields: [leadId], references: [id])
+  course      Course        @relation(fields: [courseId], references: [id])
+  batch       Batch         @relation(fields: [batchId], references: [id])
+}
+
+// Document Management
+model Document {
+  id              String   @id @default(uuid())
+  leadId          String
+  type            DocumentType
+  fileUrl         String
+  status          DocStatus @default(PENDING)
+  rejectionReason String?
+  uploadedAt      DateTime @default(now())
+  verifiedAt      DateTime?
+
+  lead            AdmissionLead @relation(fields: [leadId], references: [id])
+}
+
+enum DocumentType {
+  AADHAAR
+  PASSPORT_PHOTO
+  SIGNATURE
+  TENTH_MARKSHEET
+  TWELFTH_MARKSHEET
+  TRANSFER_CERT
+  MIGRATION_CERT
+  CATEGORY_CERT
+  OTHER
+}
+
+enum DocStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Fee Management
+model Payment {
+  id            String   @id @default(uuid())
+  leadId        String
+  amount        Float
+  mode          PaymentMode
+  status        PaymentStatus @default(PENDING)
+  transactionId String?
+  receiptUrl    String?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  lead          AdmissionLead @relation(fields: [leadId], references: [id])
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// Audit Logs
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String
+  entityId    String
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+}

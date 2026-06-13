@@ -1,0 +1,44 @@
+const prisma = require("../../../config/prisma");
+
+class AuthRepository {
+  async findUserByLoginId(loginId) {
+    return await prisma.user.findUnique({
+      where: { loginId },
+    });
+  }
+
+  async findUserById(id) {
+    return await prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
+  async findUserWithProfile(id) {
+    return await prisma.user.findUnique({
+      where: { id },
+
+      include: {
+        studentProfile: true,
+      },
+    });
+  }
+
+  async updateUserPassword(id, newPasswordHash, isFirstLogin) {
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        passwordHash: newPasswordHash,
+        isFirstLogin: isFirstLogin,
+      },
+    });
+  }
+
+  // Method to create a seed user easily
+  async createUser(data) {
+    return await prisma.user.create({
+      data,
+    });
+  }
+}
+
+module.exports = new AuthRepository();
